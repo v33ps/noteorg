@@ -41,21 +41,25 @@ func getUniqueTags(tags map[string][]string) []string {
 }
 
 func walkFiles(rootPath string) map[string][]string {
-    var files []string
     tags := map[string][]string{}
 
     root := rootPath
     err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-        files = append(files, path)
-        // read the tags
-        f, err := os.Open(path)
-        defer f.Close()
+        fi, err := os.Stat(path)
         if err != nil {
             panic(err)
         }
-        rd := bufio.NewReader(f)
-        line, err := rd.ReadString('\n')
-        tags[path] = strings.Split(strings.TrimSuffix(line, "\n"), ",")
+        mode := fi.Mode()
+        if mode.IsRegular() {
+            f, err := os.Open(path)
+            defer f.Close()
+            if err != nil {
+                panic(err)
+            }
+            rd := bufio.NewReader(f)
+            line, err := rd.ReadString('\n')
+            tags[path] = strings.Split(strings.TrimSuffix(line, "\n"), ",")
+        }
         return nil
     })
     if err != nil {
